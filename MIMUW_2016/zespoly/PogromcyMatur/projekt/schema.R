@@ -58,6 +58,13 @@ init <<- function() {
   wyniki_po_plci$id_kryterium <<- numeric(0)
   wyniki_po_plci$wynik <<- numeric(0)
 
+  wyniki_po_dysleksji <<- data.frame()
+  wyniki_po_dysleksji$rok <<- numeric(0)
+  wyniki_po_dysleksji$rodzaj_egzaminu <<- character(0)
+  wyniki_po_dysleksji$czesc_egzaminu <<- character(0)
+  wyniki_po_dysleksji$dysleksja <<- logical(0)
+  wyniki_po_dysleksji$id_kryterium <<- numeric(0)
+  wyniki_po_dysleksji$wynik <<- numeric(0)
 
   uczniowie <<- data.frame()
   uczniowie$id_obserwacji <<- integer(0)

@@ -190,6 +190,25 @@ dodaj_oceny_po_plci <- function(dane, row) {
   wyniki_po_plci <<- wyniki_po_plci %>% rbind(nowe)
 }
 
+dodaj_oceny_po_dysleksji <- function(src, dane, row) {
+  ut = pobierz_dane_uczniowie_testy(src)
+  testy = pobierz_testy(src) %>%
+    filter(rok = row$rok, rodzaj_egzaminu = row$rodzaj_egzaminu, czesc_egzaminu = row$czesc_egzaminu) %>%
+    inner_join(ut) %>%
+    select(id_obserwacji, dysleksja) %>%
+    distinct() %>%
+    collect()
+  
+  nowe = dane %>%
+    inner_join(uczniowie) %>%
+    group_by(dysleksja) %>%
+    summarise_each(funs(mean(., na.rm = TRUE)),
+                   starts_with("k_")) %>%
+    gather(id_kryterium, wynik, starts_with("k_"), na.rm = TRUE) %>%
+    mutate(rodzaj_egzaminu = row$rodzaj_egzaminu, czesc_egzaminu = row$czesc_egzaminu, rok = row$rok)
+  wyniki_po_dysleksji <<- wyniki_po_dysleksji %>% rbind(nowe)
+}
+
 zaladuj_nowe_wyniki_szkol <- function(p_rok, t_rodzaj = NULL, t_czesc = NULL) {
   src = polacz()
 

@@ -57,55 +57,77 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-rysuj_wykres_plec_old <- function() {
-  wyniki_dobre = head(filter(wyniki_po_plci, plec != 0),20)
-  return (ggplot(wyniki_dobre, aes(x=id_kryterium, y = wynik)) + 
+rysuj_wykres_plec <- function(egzamin, poziom = NULL) {
+  d_egz = typy_testow %>% filter(id == egzamin) %>%
+    select(rok, rodzaj_egzaminu, czesc_egzaminu)
+  
+  wyniki_plec = wyniki_po_plci %>%
+    inner_join(d_egz)
+  
+  if (poziom == "pyt") {
+    wyniki_plec = wyniki_plec %>%
+      inner_join(kryteria, by = c("id_kryterium" = "id")) %>%
+      group_by(plec, id_pytania) %>%
+      summarise_each(funs(sum), wynik, max_punktow) %>%
+      rename(id = id_pytania)
+  } else if (poziom == "wia") {
+    wyniki_plec = wyniki_plec %>%
+      inner_join(kryteria, by = c("id_kryterium" = "id")) %>%
+      group_by(plec, id_wiazki) %>%
+      summarise_each(funs(sum), wynik, max_punktow) %>%
+      rename(id = id_wiazki)
+  } else {
+    wyniki_plec = wyniki_plec %>%
+      inner_join(kryteria, by = c("id_kryterium" = "id")) %>%
+      rename(id = id_kryterium)
+  }
+  wyniki_plec$wynik = wyniki_plec$wynik / wyniki_plec$max_punktow
+  
+  return (ggplot(wyniki_plec, aes(x=factor(id), y = wynik)) + 
             geom_bar(stat = "identity", aes(fill=plec), position = "dodge") +
             scale_fill_discrete(name="Płeć", breaks=c("k","m"), labels=c("Kobieta", "Mężczyzna")))
 }
 
-rysuj_wykres_plec <- function() {
-  # TODO
-  #kry = names(dane)
-  #kry = kry[grepl('^k_', kry)]
-  #d <- (uczniowie %>% inner_join(dane))[c("plec", kry)]
-  #d <- d %>% group_by(plec) %>% summarize_each(funs(mean))
-  #d <- d %>% gather()
-  #View(d)
-  #return(plot(rnorm(100), rnorm(100)))
-}
-
-rysuj_histogram_calosci <- function() {
-  kry = names(dane)
-  kry = kry[grepl('^k_', kry)]
-  tmp <- dane[, kry]
-  do_wykresu <- rowSums(tmp, na.rm=TRUE)
-  res <- qplot(do_wykresu,
-               geom="histogram",
-               binwidth = 0.5,  
-               main = paste0("Histogram of overall results."), 
-               xlab = "Ilość punktów",
-               fill=I("blue"),
-               col=I("red"))
-  return(res)
-}
-
-ustaw_dane <- function(wybrano) {
-  data_env = new.env()
-  load(paste0("../../teamRocket/raw_data/ZPD_", wybrano, ".dat"), data_env)
-  nowe_dane = data_env[[ls(data_env)]]
-  dane <<- nowe_dane
-  cat(paste0("Loaded data set: ", wybrano, "\n"))
-  gc()
+rysuj_wykres_poprzedni <- function(egzamin, poprzedni, poziom = NULL) {
+  d_egz = typy_testow %>% filter(id == egzamin) %>%
+    select(rok, rodzaj_egzaminu, czesc_egzaminu)
+  d_poprz = typy_testow %>% filter(id == poprzedni) %>%
+    select(rodzaj_egzaminu, czesc_egzaminu) %>%
+    rename(rodzaj_poprzedni = rodzaj_egzaminu, czesc_poprzedni = czesc_egzaminu)
+  
+  wyniki_egz = wyniki_po_egz %>%
+    inner_join(d_egz) %>%
+    inner_join(d_poprz)
+  
+  if (poziom == "pyt") {
+    wyniki_egz = wyniki_egz %>%
+      inner_join(kryteria, by = c("id_kryterium" = "id")) %>%
+      group_by(poprzedni_wynik, id_pytania, liczba) %>%
+      summarise_each(funs(sum), wynik, max_punktow) %>%
+      rename(id = id_pytania)
+  } else if (poziom == "wia") {
+    wyniki_egz = wyniki_egz %>%
+      inner_join(kryteria, by = c("id_kryterium" = "id")) %>%
+      group_by(poprzedni_wynik, id_wiazki, liczba) %>%
+      summarise_each(funs(sum), wynik, max_punktow) %>%
+      rename(id = id_wiazki)
+  } else {
+    wyniki_egz = wyniki_egz %>%
+      inner_join(kryteria, by = c("id_kryterium" = "id")) %>%
+      rename(id = id_kryterium)
+  }
+  
+  wyniki_egz$wynik = wyniki_egz$wynik / wyniki_egz$max_punktow
+  
+  return (ggplot(wyniki_egz, aes(x = factor(id), y = wynik)) +
+          geom_point(aes(color = poprzedni_wynik, size = liczba)))
 }
 
 shinyServer(function(input, output) {
   observeEvent(input$gen, {
-    if(input$wykresy_plec)
-      output$plec_plot <- renderPlot(rysuj_wykres_plec())
-  })
-  observeEvent(input$egzamin, {
-    ustaw_dane(input$egzamin)
-    output$histogram_plot <- renderPlot(rysuj_histogram_calosci())
+    if (input$wykresy_plec)
+      output$plec_plot <- renderPlot(rysuj_wykres_plec(input$egzamin, input$poziom))
+    if (input$wykresy_poprzedni)
+      output$poprz_plot <- renderPlot(rysuj_wykres_poprzedni(input$egzamin, input$poprzedni_egzamin, input$poziom))
   })
 })
