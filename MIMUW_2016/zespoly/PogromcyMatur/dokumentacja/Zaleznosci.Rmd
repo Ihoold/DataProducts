@@ -1,0 +1,28 @@
+---
+title: "Zależności"
+author: "Igor Kotrasinski"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Zależności}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+##Zależności modułu ładującego dane
+
+* dplyr
+* ZPD
+* tidyr
+* rmarkdown (dokumentacja)
+* knitr (dokumentacja)
+
+## Zależności aplikacji Shiny
+
+* shiny
+* dplyr
+* shinyBS
+* ggplot2
+* scales
+* rmarkdown (dokumentacja)
+* knitr (dokumentacja)

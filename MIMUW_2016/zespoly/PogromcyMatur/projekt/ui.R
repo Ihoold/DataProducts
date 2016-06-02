@@ -16,27 +16,30 @@ modalHelp <- function(name, header = "[?]", content = "Pomoc niedostępna.") {
 
 interface_help <- tags$html(
   tags$div("Korzystasz z narzędzia służącego do wizualizacji zależności pomiędzy wynikami 
-           osiągniętymi przez uczniów na poprzednim szczeblu edukacji, a wynikami egzaminu."),
+           osiągniętymi przez uczniów na poprzednim szczeblu edukacji a wynikami egzaminu."),
   tags$div("Na początku możesz wybrać:"),
   tags$ul(
     tags$li("Egzamin którym jesteś zainteresowany."),
     tags$li("Arkusz egzaminu który ma zostać rozpatrzony. Ten sam egzamin może posiadać różne arkusze,
             na przykład wersje dla dyslektyków lub \"stare\"/\"nowe\" matury. Sprawdzić, który z nich cię
             interesuje możesz np. na stronie", tags$a(href="http://zpd.ibe.edu.pl/doku.php?id=bazatestypytania", "arkusze"),
-            "lub wybierając arkusz i wchodząc w link do jego treści."),
+            "lub wybierając arkusz i wchodząc w link do jego treści.", tags$br(), "Miej na uwadze, że jeśli wybierzesz
+            wszystkie arkusze do przedstawienia, to wszystkie przedstawiane elementy będą oznaczone na wykresie
+            przez swoje identyfikatory. Jeśli wybierzesz konkretny arkusz, elementy otrzymają numery zgodne z
+            numeracją w arkuszu (nie tyczy się to wiązek pytań, gdyż te nie mają numerów w arkuszach)."),
     tags$li("Poprzedni egzamin - czyli ten, z którym będziemy porównywać wyniki."),
-    tags$li("Jak bardzo szczegółowy ma być wykres. Pytania egzaminacyjne podzielone są na:" 
-            , tags$ul(
-              tags$li("Kryteria ocen - najbardziej atomiczne cząstki oceny. Może to być np. pojedyncze
-                      pytanie zamknięte, lub ocena za interpunkcję w wypracowaniu."),
-              tags$li("Pytania - jedno pytanie składa się z jednego lub większej liczby kryterium oceny.
-                      Odpowiadają rzeczywistym pytaniom występującym na arkuszach."),
-              tags$li("Wiązki pytań - pytania są czasami, choć nie zawsze, podzielone na tematyczne grupy
-                      nazywane wiązkami pytań.")
-              )
-              )
+    tags$li("Jak bardzo szczegółowy ma być wykres. Pytania egzaminacyjne podzielone są na:", 
+      tags$ul(
+      tags$li("Kryteria ocen - najbardziej atomowe cząstki oceny. Może to być np. pojedyncze
+              pytanie zamknięte, lub ocena za interpunkcję w wypracowaniu."),
+      tags$li("Pytania - jedno pytanie składa się z jednego lub większej liczby kryterium oceny.
+              Odpowiadają rzeczywistym pytaniom występującym na arkuszach."),
+      tags$li("Wiązki pytań - pytania są czasami, choć nie zawsze, podzielone na tematyczne grupy
+              nazywane wiązkami pytań.")
+      )
     )
   )
+)
 
 glowny_wykres_help <- tags$html(
   tags$div("Na tym wykresie przedstawione są wyniki poszczególnych kryteriów / pytań / wiązek pytań z wybranego egzaminu."),
@@ -65,7 +68,7 @@ wykres_kryterium_header <- wykres_header("Szczegółowy wykres części", "")
 
 shinyUI(pageWithSidebar(
   
-  headerPanel("Czwarta, finalna iteracja"),
+  headerPanel("Egzaminy względem egzaminów"),
   
   sidebarPanel(
     uiOutput("egz_wybor"),
@@ -90,7 +93,10 @@ shinyUI(pageWithSidebar(
         value = "poprzednie",
         glowny_wykres_header,
         htmlOutput("linki_do_arkusza"),
-        plotOutput("poprz_plot", click="poprz_click", hover="poprz_hover"),
+        tags$div (
+          style = "overflow-x: scroll",
+          plotOutput("poprz_plot", click="poprz_click", hover="poprz_hover")
+        ),
         wykres_kryterium_header,
         plotOutput("poprz_plot_jedno"),
         htmlOutput("arkusze_zawierajace")

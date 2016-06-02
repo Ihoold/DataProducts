@@ -7,27 +7,27 @@
     rename(id = id_testu) %>%
     collect() %>%
     as.data.frame()
-  ctxt@typy_testow <- rbind(ctxt@typy_testow, nowe)
-  ctxt@typy_testow <- ctxt@typy_testow %>% unique()
+  ctxt@typy_testow <- nowe
   return(ctxt)
 }
 
 .przeladuj_kryteria <- function(ctxt) {
   src = polacz()
-  kryt = pobierz_kryteria_oceny(src) %>%
+  kryt_d = pobierz_kryteria_oceny(src) %>%
+    collect()
+  
+  kryt = kryt_d %>%
     select(kryterium, l_punktow, numer_kryterium, id_pytania,
            id_wiazki, tresc_pytania, tresc_wiazki) %>%
     rename(id = kryterium, max_punktow = l_punktow) %>%
     distinct() %>%
-    collect() %>%
     as.data.frame()
   ctxt@kryteria <- kryt
   
-  kryt = pobierz_kryteria_oceny(src) %>%
+  kryt = kryt_d %>%
     select(kryterium, numer_pytania, id_testu) %>%
     rename(id = kryterium) %>%
     distinct() %>%
-    collect() %>%
     as.data.frame()
   
   ctxt@kryteria_testy <- kryt
@@ -43,7 +43,8 @@
   ctxt@normy <- pobierz_normy(src) %>%
     inner_join(skalowania) %>%
     select(id_testu, wartosc_zr, wartosc) %>%
-    collect()
+    collect() %>%
+    as.data.frame()
   return(ctxt)
 }
 
@@ -63,7 +64,7 @@ zaladuj_male_dane <- function (ctxt) {
     .przeladuj_kryteria() %>%
     .zaladuj_normy() %>%
     .zaladuj_ostatnie_przystapienia() %>%
-    .zaladuj_nowe_testy()
+    .zaladuj_testy()
   return(ctxt)
 }
 
@@ -72,15 +73,15 @@ zaladuj_male_dane <- function (ctxt) {
   src = polacz()
   
   przystapienia = filtruj_przystapienia(src, FALSE, 'matura', NULL, TRUE) %>% 
-    select(id_obserwacji, rodzaj_egzaminu, rok) %>% collect()
+    select(id_obserwacji, rodzaj_egzaminu, rok) %>% collect() %>% as.data.frame()
   ctxt@ostatnie_przystapienia <- przystapienia
   
   przystapienia = filtruj_przystapienia(src, FALSE, 'egzamin gimnazjalny', NULL, TRUE) %>%
-    select(id_obserwacji, rodzaj_egzaminu, rok) %>% collect()
+    select(id_obserwacji, rodzaj_egzaminu, rok) %>% collect() %>% as.data.frame()
   ctxt@ostatnie_przystapienia <- ctxt@ostatnie_przystapienia %>% rbind(przystapienia)
   
   przystapienia = filtruj_przystapienia(src, FALSE, 'sprawdzian', NULL, TRUE) %>%
-    select(id_obserwacji, rodzaj_egzaminu, rok) %>% collect()
+    select(id_obserwacji, rodzaj_egzaminu, rok) %>% collect() %>% as.data.frame()
   ctxt@ostatnie_przystapienia <- ctxt@ostatnie_przystapienia %>% rbind(przystapienia)
   
   return(ctxt)

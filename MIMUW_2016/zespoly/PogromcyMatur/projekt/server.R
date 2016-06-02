@@ -7,15 +7,12 @@
 
 library(shiny)
 library(dplyr)
-library(ZPD)
 library(ggplot2)
 library(scales)
-library(tidyr)
-library(corrplot)
 
 source("./pobierz_pytania.R")
 
-load("./data.RData")
+load("./dane.RData")
 
 PX_PER_EXAM_PART <<- 45
 PX_MIN <<- 200
@@ -26,9 +23,10 @@ egzaminy_poprz <<- dane@wyniki_po_egz %>%
   distinct()
 egzaminy_poprz$nr <<- 1:nrow(egzaminy_poprz)
 
-generuj_link <- function(arkusz, klucz) {
-  return(paste(c("http://zpd.ibe.edu.pl/pobierzTresc.php?arkusz=", arkusz, "&typ=pdf&klucz=",klucz)
-               , collapse = ''))
+generuj_link <- function(arkusz, klucz, nazwa) {
+  link = paste(c("http://zpd.ibe.edu.pl/pobierzTresc.php?arkusz=", arkusz, "&typ=pdf&klucz=",klucz)
+               , collapse = '')
+  tags$a(href = link, nazwa, target = "_blank")
 }
 
 numer_kryterium <- function(nr_kryterium, nr_pytania) {
@@ -172,8 +170,8 @@ arkusze_zawierajace <- function(n_id, poziom)
 }
 
 arkusz_linia <- function(arkusz, czesc) {
-  test <- tags$a(href = generuj_link(arkusz, 0), "[Test]")
-  klucz <- tags$a(href = generuj_link(arkusz, 1), "[Klucz]")
+  test <- generuj_link(arkusz, 0, "[Test]")
+  klucz <- generuj_link(arkusz, 1, "[Klucz]")
   gdzie <- paste(arkusz, " [", czesc, "]", sep = "")
   paste(gdzie, test, klucz, "<br/>")
 }
@@ -249,8 +247,8 @@ shinyServer(function(input, output) {
     
     if(!is.null(input$nr_arkusza) && input$nr_arkusza != 0) {
       output$linki_do_arkusza <- renderUI(list(
-        tags$a(href = generuj_link(dane@typy_testow[input$nr_arkusza,]$arkusz, 0), "[Test]"),
-        tags$a(href = generuj_link(dane@typy_testow[input$nr_arkusza,]$arkusz, 1), "[Klucz]")
+        generuj_link(dane@typy_testow[input$nr_arkusza,]$arkusz, 0, "[Test]"),
+        generuj_link(dane@typy_testow[input$nr_arkusza,]$arkusz, 1, "[Klucz]")
       ))
     } else {
       output$linki_do_arkusza <- renderUI(tags$div(""))
