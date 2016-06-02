@@ -90,7 +90,7 @@ shinyUI(pageWithSidebar(
         value = "poprzednie",
         glowny_wykres_header,
         htmlOutput("linki_do_arkusza"),
-        plotOutput("poprz_plot", click="poprz_click"),
+        plotOutput("poprz_plot", click="poprz_click", hover="poprz_hover"),
         wykres_kryterium_header,
         plotOutput("poprz_plot_jedno"),
         htmlOutput("arkusze_zawierajace")

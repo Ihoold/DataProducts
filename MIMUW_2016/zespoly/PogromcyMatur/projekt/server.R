@@ -63,18 +63,18 @@ dane_poprzedni_wszystko <- function(wyniki_egz, poziom) {
       summarise_each(funs(sum), wynik, max_punktow) %>%
       ungroup() %>%
       rename(id = id_pytania)
-    n_poziom <- "id pytania"
+    n_poziom <- "pytania"
   } else if (poziom == "wia") {
     wyniki_egz = wyniki_egz %>%
       group_by(poprzedni_wynik, liczba, id_wiazki) %>%
       summarise_each(funs(sum), wynik, max_punktow) %>%
       ungroup() %>%
       rename(id = id_wiazki)
-    n_poziom <- "id wiązki"
+    n_poziom <- "wiązki"
   } else {
     wyniki_egz = wyniki_egz %>%
       rename(id = id_kryterium)
-    n_poziom <- "id kryterium"
+    n_poziom <- "kryterium"
   }
   
   wyniki_egz$wynik = wyniki_egz$wynik / wyniki_egz$max_punktow
@@ -122,17 +122,22 @@ dane_poprzedni_jedno <- function(poprzednie, p_id) {
   return(poprzednie %>% filter(id == p_id))
 }
 
-rysuj_wykres_poprzedni <- function(dane, nazwa_x) {
-  ggplot(dane, aes(x = id_factor, y = wynik)) +
+rysuj_wykres_poprzedni <- function(dane, nazwa_x, hovered_id, clicked_id) {
+  if(hovered_id == clicked_id)
+    hovered_id <- -1
+  colors <- ifelse(dane$id_factor == clicked_id, "click", ifelse(dane$id_factor == hovered_id, "hover",  "normal"))
+  ggplot(dane, aes(x = id_factor, y = wynik, colour=colors, fill=colors)) +
+    scale_colour_manual(values = c("black", "black", "black"), guide = FALSE) +
+    scale_fill_manual(values = c("normal"="#ccccff", "hover"="#8888cc", "click"="#4444bb"), guide = FALSE) +
     geom_violin() +
-    labs(x = nazwa_x, y = "wynik", color = "Poprzedni wynik", size = "Liczba uczniów z poprzednim wynikiem") +
+    labs(x = paste0("Id ", nazwa_x), y = paste0("Rozkład wyników procentowych ", nazwa_x), size = "Liczba uczniów z poprzednim wynikiem") +
     scale_y_continuous(limits = c(0, 1), labels = scales::percent)
 }
 
 rysuj_wykres_poprzedni_jedno <- function(dane, nazwa) {
   ggplot(dane, aes(x = poprzedni_wynik, y = wynik)) +
   geom_point(aes(size = liczba)) +
-  labs(x = "poprzedni", y = "wynik", title = nazwa, size = "Liczba uczniów z poprzednim wynikiem") +
+  labs(x = "Wynik z poprzedniego egzaminu", y = paste0("Średni wynik ", nazwa), title = nazwa, size = "Liczba uczniów z poprzednim wynikiem") +
   scale_y_continuous(limits = c(0, 1), labels = scales::percent)
 }
 
@@ -228,9 +233,14 @@ shinyServer(function(input, output) {
     poprzedni_data <<- d[[1]]
     poprzedni_poziom <<- d[[2]]
     
-    szer = PX_PER_EXAM_PART * (poprzedni_data %>% select(id) %>% distinct() %>% nrow())
-    szer = max(szer, PX_MIN)
-    output$poprz_plot <- renderPlot(rysuj_wykres_poprzedni(d[[1]], d[[2]]), width = szer)
+    poprzedni_szer <<- PX_PER_EXAM_PART * (poprzedni_data %>% select(id) %>% distinct() %>% nrow())
+    poprzedni_szer <<- max(poprzedni_szer, PX_MIN)
+    poprzedni_clicked_item <<- -1
+    poprzedni_hovered_item <<- -1
+    output$poprz_plot <- renderPlot(
+      rysuj_wykres_poprzedni(poprzedni_data, poprzedni_poziom, poprzedni_hovered_item, poprzedni_clicked_item),
+      width = poprzedni_szer
+    )
     
     output$poprz_tabela <- renderDataTable(poprzedni_data %>%
       select(id_factor, wynik, poprzedni_wynik, liczba) %>%
@@ -246,14 +256,30 @@ shinyServer(function(input, output) {
       output$linki_do_arkusza <- renderUI(tags$div(""))
     }
   })
-  
+
+  observeEvent(input$poprz_hover, {
+    dane <- nearPoints(poprzedni_data, xvar="id_factor", yvar="wynik", input$poprz_hover, threshold = 10, maxpoints = 1)
+    if (nrow(dane) == 0)
+      poprzedni_hovered_item <<- -1
+    else
+      poprzedni_hovered_item <<- dane$id_factor
+    output$poprz_plot <- renderPlot(
+      rysuj_wykres_poprzedni(poprzedni_data, poprzedni_poziom, poprzedni_hovered_item, poprzedni_clicked_item),
+      width = poprzedni_szer
+    )
+  })
+
   observeEvent(input$poprz_click, {
     dane <- nearPoints(poprzedni_data, xvar="id_factor", yvar="wynik", input$poprz_click, threshold = 50, maxpoints = 1)
     if (nrow(dane) == 0)
       return()
-    
+    poprzedni_clicked_item <<- dane$id_factor
+    output$poprz_plot <- renderPlot(
+      rysuj_wykres_poprzedni(poprzedni_data, poprzedni_poziom, poprzedni_hovered_item, poprzedni_clicked_item),
+      width = poprzedni_szer
+    )
     poprzedni_data_jedno <<- dane_poprzedni_jedno(poprzedni_data, dane$id)
     output$poprz_plot_jedno <- renderPlot(rysuj_wykres_poprzedni_jedno(poprzedni_data_jedno, poprzedni_poziom))
     output$arkusze_zawierajace <- tekst_arkuszy(arkusze_zawierajace(dane$id, input$poziom))
-    })
+  })
 })
